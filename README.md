@@ -1,7 +1,53 @@
-# 42_Template
+# 42_TotalPerspectiveVortex
 
 ## Project Overview
 
+This project uses MNE-Python and scikit-learn for EEG data analysis and machine learning.
+
+## Environment Setup
+
+This project uses [uv](https://docs.astral.sh/uv/) for fast Python package management with Python 3.11.
+
+### Prerequisites
+
+- Python 3.11 or later
+- uv (will be installed automatically if not present)
+
+### Installation
+
+1. Install uv (if not already installed):
+```bash
+pip install uv
+```
+
+2. Create the Python environment and install dependencies:
+```bash
+uv sync
+```
+
+This will automatically:
+- Create a Python 3.11 virtual environment
+- Install MNE-Python and scikit-learn along with their dependencies
+
+### Running Scripts
+
+Use `uv run` to execute Python scripts with the project environment:
+
+```bash
+# Verify the setup
+uv run python verify_setup.py
+
+# Test library functionality
+uv run python test_libraries.py
+
+# Run the main script
+uv run python main.py
+```
+
+### Installed Libraries
+
+- **MNE-Python** (v1.11.0): A package for exploring, visualizing, and analyzing human neurophysiological data
+- **scikit-learn** (v1.8.0): Machine learning library for Python
 
 ## Development
 
