@@ -1,22 +1,53 @@
-# 42 Total Perspective Vortex
+# 42_TotalPerspectiveVortex
 
 ## Project Overview
 
-The Total Perspective Vortex project aims to develop a Brain-Computer interface (BCI) that utilizes machine learning algorithms to interpret electroencephalographic (EGG) data.
+This project uses MNE-Python and scikit-learn for EEG data analysis and machine learning.
 
-**Key Objectives**
-- **Signal Interface**: The system must infer whether a subject is performing or imaging specific movements based on EEG readings within a defined timeframe.
-- **Dimensionality Reduction**: A core requirement is the custom implementation of a dimensionality reduction algorithm (such as Common Spatial Patterns(CSP) or Principal Component Analysis (PCA)) to extract the most meaningful features from cerebral signals.
-- **Pipeline Integration**: The data processing workflow must be integrated into a scikit-learn `Pipeline` object, utilizing `BaseRstimator` and `TransformerMixin` classes.
-- **Real-time Classification**: The system should be capable of classifying data streams in "real time", providing predicitons within a 2-second delay after receiving a data chunk.
+## Environment Setup
 
-**Technical Stack**
-- **Language**: Python (3.11.*)
-- **Libraries**: **MNE** for EEG data parsing, visualization, and filtering, and **scikit-learn** for machine learning and classfication tasks.
+This project uses [uv](https://docs.astral.sh/uv/) for fast Python package management with Python 3.11.
 
-**Perfomance Standards**
-- **Evaluation**: The entire proccesing pipeline must be evaulated using `cross_val_socre`.
-- **Target Accuracy**: Achieve a minmum mean accuracy of 60% across all test subjects and experiment runs using never-learned data.
+### Prerequisites
+
+- Python 3.11 or later
+- uv (will be installed automatically if not present)
+
+### Installation
+
+1. Install uv (if not already installed):
+```bash
+pip install uv
+```
+
+2. Create the Python environment and install dependencies:
+```bash
+uv sync
+```
+
+This will automatically:
+- Create a Python 3.11 virtual environment
+- Install MNE-Python and scikit-learn along with their dependencies
+
+### Running Scripts
+
+Use `uv run` to execute Python scripts with the project environment:
+
+```bash
+# Verify the setup
+uv run python verify_setup.py
+
+# Test library functionality
+uv run python test_libraries.py
+
+# Run the main script
+uv run python main.py
+```
+
+### Installed Libraries
+
+- **MNE-Python** (v1.11.0): A package for exploring, visualizing, and analyzing human neurophysiological data
+- **scikit-learn** (v1.8.0): Machine learning library for Python
 
 ## Development
 
