@@ -1,7 +1,22 @@
-# 42_Template
+# 42 Total Perspective Vortex
 
 ## Project Overview
 
+The Total Perspective Vortex project aims to develop a Brain-Computer interface (BCI) that utilizes machine learning algorithms to interpret electroencephalographic (EGG) data.
+
+**Key Objectives**
+- **Signal Interface**: The system must infer whether a subject is performing or imaging specific movements based on EEG readings within a defined timeframe.
+- **Dimensionality Reduction**: A core requirement is the custom implementation of a dimensionality reduction algorithm (such as Common Spatial Patterns(CSP) or Principal Component Analysis (PCA)) to extract the most meaningful features from cerebral signals.
+- **Pipeline Integration**: The data processing workflow must be integrated into a scikit-learn `Pipeline` object, utilizing `BaseRstimator` and `TransformerMixin` classes.
+- **Real-time Classification**: The system should be capable of classifying data streams in "real time", providing predicitons within a 2-second delay after receiving a data chunk.
+
+**Technical Stack**
+- **Language**: Python (3.11.*)
+- **Libraries**: **MNE** for EEG data parsing, visualization, and filtering, and **scikit-learn** for machine learning and classfication tasks.
+
+**Perfomance Standards**
+- **Evaluation**: The entire proccesing pipeline must be evaulated using `cross_val_socre`.
+- **Target Accuracy**: Achieve a minmum mean accuracy of 60% across all test subjects and experiment runs using never-learned data.
 
 ## Development
 
