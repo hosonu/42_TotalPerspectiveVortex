@@ -214,3 +214,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# MNE-Python / PhysioNet EEGBCI downloads (local cache)
+mne_data/
