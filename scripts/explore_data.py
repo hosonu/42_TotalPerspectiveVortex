@@ -11,20 +11,11 @@ applies an 8-30 Hz bandpass filter, and shows before/after visualizations.
 EEGBCI files are downloaded to ``<project_root>/mne_data/`` (not committed).
 """
 
-import os
 import sys
 
 import mne
-from mne.datasets import eegbci
 
-_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-MNE_DATA_DIR = os.path.join(_PROJECT_ROOT, "mne_data")
-os.makedirs(MNE_DATA_DIR, exist_ok=True)
-mne.set_config("MNE_DATASETS_EEGBCI_PATH", MNE_DATA_DIR, set_env=True)
-
-IMAGERY_RUNS = [4, 8, 12]
-L_FREQ = 8.0
-H_FREQ = 30.0
+from eegbci_load import H_FREQ, IMAGERY_RUNS, L_FREQ, fetch_raw_eegbci
 
 
 def parse_subject(argv: list[str]) -> int:
@@ -39,19 +30,6 @@ def parse_subject(argv: list[str]) -> int:
         print(f"Error: subject must be between 1 and 109, got {subject}.")
         sys.exit(1)
     return subject
-
-
-def fetch_raw(subject: int, runs: list[int]) -> mne.io.Raw:
-    """Fetch EDF files from PhysioNet and return a concatenated Raw object."""
-    fnames = eegbci.load_data(subject, runs)
-    raws = [mne.io.read_raw_edf(f, preload=True) for f in fnames]
-    raw = mne.concatenate_raws(raws)
-
-    eegbci.standardize(raw)
-    montage = mne.channels.make_standard_montage("standard_1005")
-    raw.set_montage(montage)
-    raw.set_eeg_reference("average", projection=True)
-    return raw
 
 
 def show_info(raw: mne.io.Raw, subject: int) -> None:
@@ -80,7 +58,7 @@ def main() -> None:
     subject = parse_subject(sys.argv)
 
     print(f"\n>>> Fetching data for subject {subject}, runs {IMAGERY_RUNS} …")
-    raw = fetch_raw(subject, IMAGERY_RUNS)
+    raw = fetch_raw_eegbci(subject, IMAGERY_RUNS)
     show_info(raw, subject)
 
     events, event_id = mne.events_from_annotations(raw)
