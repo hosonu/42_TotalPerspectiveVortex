@@ -1,57 +1,85 @@
-# Run from the repository root:  make <target>
-UV      ?= uv
-SUBJECT ?= 1
-SRC     := src/bci
-DEV     := dev
-FLAKE8  := $(UV) run flake8
-PEP8    := $(UV) run autopep8
+# ==============================================================================
+# 42 Total Perspective Vortex - Makefile
+# ==============================================================================
 
-.PHONY: help install sync run main verify test-lib cv explore extract-epochs clean lint format fmt check
+# Variables
+UV          ?= uv
+PYTHON      := $(UV) run python
+FLAKE8      := $(UV) run flake8
+PEP8        := $(UV) run autopep8
+
+# Directories
+SRC_DIR     := src
+SCRIPTS_DIR := scripts
+MODEL_FILE  := saved_bci_model.pkl
+
+# Entry Point
+CLI_PY      := $(SRC_DIR)/mybci.py
+
+# Parameters (can be overridden: make train RUNS="3 7 11" SUBJECT=5)
+SUBJECT     ?= 1
+RUNS        ?= 4 8 12
+
+# Rules
+.PHONY: all help install sync run main train predict lint format fmt check clean fclean re
+
+all: install
 
 help:
-	@echo "42 Total Perspective Vortex — common targets"
+	@echo "Total Perspective Vortex — Commands"
 	@echo ""
-	@echo "  make install / sync   uv sync (deps + editable install of bci)"
-	@echo "  make run / main       full evaluation: src/main.py"
-	@echo "  make verify          dev/verify_setup.py"
-	@echo "  make test-lib        dev/test_libraries.py"
-	@echo "  make cv              dev/run_motor_imagery_cv.py (SUBJECT=$(SUBJECT))"
-	@echo "  make explore         dev/explore_data.py"
-	@echo "  make extract-epochs  dev/extract_epochs.py (SUBJECT=$(SUBJECT))"
-	@echo "  make lint            flake8 on $(SRC), src/main.py, $(DEV)"
-	@echo "  make format / fmt    autopep8 -i -r on $(SRC), src/main.py, $(DEV)"
-	@echo "  make check           verify + lint"
-	@echo "  make clean           remove __pycache__ under src and dev"
+	@echo "  Setup:"
+	@echo "    make install        Install dependencies using uv"
+	@echo ""
+	@echo "  Execution:"
+	@echo "    make run            Full evaluation for all subjects (no arguments)"
+	@echo "    make train          Train model with RUNS='$(RUNS)'"
+	@echo "    make predict        Playback simulation with RUNS='$(RUNS)'"
+	@echo ""
+	@echo "  Development:"
+	@echo "    make lint           Run flake8 on src and scripts"
+	@echo "    make fmt            Run autopep8 formatter"
+	@echo "    make check          Run verify_setup and lint"
+	@echo ""
+	@echo "  Cleanup:"
+	@echo "    make clean          Remove python cache files"
+	@echo "    make fclean         Complete cleanup including .venv and saved model"
+	@echo "    make re             Full reinstallation"
 
+# Dependency Management
 install sync:
 	$(UV) sync
 
+# Main Tasks
 run main: sync
-	$(UV) run python src/main.py
+	@echo "==> Running bulk evaluation on all subjects..."
+	$(PYTHON) $(CLI_PY)
 
-verify: sync
-	$(UV) run python dev/verify_setup.py
+train: sync
+	@echo "==> Training model..."
+	$(PYTHON) $(CLI_PY) $(RUNS) train --subject $(SUBJECT)
 
-test-lib: sync
-	$(UV) run python dev/test_libraries.py
+predict: sync
+	@echo "==> Running playback simulation..."
+	$(PYTHON) $(CLI_PY) $(RUNS) predict --subject $(SUBJECT)
 
-cv: sync
-	$(UV) run python dev/run_motor_imagery_cv.py $(SUBJECT)
-
-explore: sync
-	$(UV) run python dev/explore_data.py $(SUBJECT)
-
-extract-epochs: sync
-	$(UV) run python dev/extract_epochs.py $(SUBJECT)
-
+# Development Tools
 lint:
-	$(FLAKE8) $(SRC) src/main.py $(DEV)
+	$(FLAKE8) $(SRC_DIR) $(SCRIPTS_DIR)
 
-format fmt: sync
-	$(PEP8) -i -r $(SRC) src/main.py $(DEV)
+format fmt:
+	$(PEP8) -i -r $(SRC_DIR) $(SCRIPTS_DIR)
 
-check: verify lint
+check: sync lint
+	$(PYTHON) $(SCRIPTS_DIR)/verify_setup.py
 
+# Cleanup
 clean:
-	@find src $(DEV) -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null; true
-	@find src $(DEV) -name '*.pyc' -delete 2>/dev/null; true
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+
+fclean: clean
+	rm -rf .venv
+	rm -f $(MODEL_FILE)
+
+re: fclean all
