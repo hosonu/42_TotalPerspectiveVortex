@@ -45,7 +45,7 @@ This will automatically:
 
 ### Running Scripts
 
-Use `uv run` to execute Python scripts with the project environment:
+Use `uv run` to execute Python scripts with the project environment. The `bci` package lives under `src/bci` and is installed in editable mode with `uv sync`.
 
 ```bash
 # Verify the setup
@@ -54,8 +54,8 @@ uv run python scripts/verify_setup.py
 # Test library functionality
 uv run python scripts/test_libraries.py
 
-# Run the main script
-uv run python main.py
+# Main evaluation (project root: metrics across subjects / experiments)
+uv run python src/main.py
 ```
 
 ### Installed Libraries
