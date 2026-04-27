@@ -217,3 +217,9 @@ __marimo__/
 
 # MNE-Python / PhysioNet EEGBCI downloads (local cache)
 mne_data/
+
+# Saved model
+saved_bci_model.pkl
+
+# Project files
+Total-perspective-vortex.pdf
