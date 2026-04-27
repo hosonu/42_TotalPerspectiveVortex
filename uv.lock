@@ -5,7 +5,7 @@ requires-python = ">=3.11"
 [[package]]
 name = "42-totalperspectivevortex"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "autopep8" },
     { name = "flake8" },
