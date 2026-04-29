@@ -15,9 +15,10 @@ except ImportError:
     print("Error: bci module not found. Check PYTHONPATH.")
     sys.exit(1)
 
-MODEL_FILE = "saved_bci_model.pkl"
+def get_model_file(use_bonus):
+    return "bonus_bci_model.pkl" if use_bonus else "saved_bci_model.pkl"
 
-def do_train(subject, runs):
+def do_train(subject, runs, use_bonus=False):
     """
     Train the pipeline on the given runs, print cross-validation scores, then save the model.
     """
@@ -26,7 +27,7 @@ def do_train(subject, runs):
     X, y = epochs_to_Xy(epochs)
 
     # Build pipeline
-    pipeline = make_motor_imagery_pipeline(n_csp_components=6)
+    pipeline = make_motor_imagery_pipeline(n_csp_components=6, use_bonus=use_bonus)
 
     # Cross-validation (aligned with the PDF example output)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -38,21 +39,23 @@ def do_train(subject, runs):
     # Fit on all data and persist the model
     print("\nTraining final model on all provided data...")
     pipeline.fit(X, y)
-    joblib.dump(pipeline, MODEL_FILE)
-    print(f"Model saved to {MODEL_FILE}")
+    model_file = get_model_file(use_bonus)
+    joblib.dump(pipeline, model_file)
+    print(f"Model saved to {model_file}")
 
 
-def do_predict(subject, runs):
+def do_predict(subject, runs, use_bonus=False):
     """
     Load the saved model and simulate a data stream, predicting one epoch at a time.
     """
-    model_path = Path(MODEL_FILE)
+    model_file = get_model_file(use_bonus)
+    model_path = Path(model_file)
     if not model_path.exists():
-        print(f"Error: Model file '{MODEL_FILE}' not found. Please run 'train' first.")
+        print(f"Error: Model file '{model_file}' not found. Please run 'train' first.")
         sys.exit(1)
 
-    print(f"Loading model from {MODEL_FILE}...")
-    pipeline = joblib.load(MODEL_FILE)
+    print(f"Loading model from {model_file}...")
+    pipeline = joblib.load(model_file)
 
     print(f"Loading data for subject {subject}, runs {runs} for playback...")
     epochs = build_epochs(subject, runs=runs)
@@ -96,7 +99,7 @@ def do_predict(subject, runs):
     accuracy = correct_predictions / total_epochs
     print(f"\nAccuracy: {accuracy:.4f}")
 
-def do_evaluate_all():
+def do_evaluate_all(use_bonus=False):
     """
     Main script to evaluate the BCI pipeline across all 109 subjects
     for the 6 different experimental conditions specified in the assignment.
@@ -128,7 +131,7 @@ def do_evaluate_all():
                 epochs = build_epochs(subject, runs)
                 X, y = epochs_to_Xy(epochs)
 
-                pipeline = make_motor_imagery_pipeline(n_csp_components=6)
+                pipeline = make_motor_imagery_pipeline(n_csp_components=6, use_bonus=use_bonus)
 
                 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
@@ -165,6 +168,7 @@ def main():
     parser.add_argument("runs", metavar="N", type=int, nargs="+", help="Run numbers (e.g., 4 14)")
     parser.add_argument("mode", choices=["train", "predict"], help="Mode to run: 'train' or 'predict'")
     parser.add_argument("--subject", type=int, default=1, help="Subject ID (default: 1)")
+    parser.add_argument("--bonus", action="store_true", help="Use the custom classifier (Bonus part)")
 
     args = parser.parse_args()
 
