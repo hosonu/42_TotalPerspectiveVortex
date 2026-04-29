@@ -7,6 +7,7 @@ from sklearn.pipeline import Pipeline
 
 from bci.csp import CustomCSP
 from bci.features import LogVarianceTransformer
+from bci.classifier import CustomLogisticRegression
 
 
 def make_motor_imagery_pipeline(
@@ -14,6 +15,7 @@ def make_motor_imagery_pipeline(
     n_csp_components: int = 6,
     logvar_filters_per_end: int = 3,
     csp: CustomCSP | None = None,
+    use_bonus: bool = False,
 ) -> Pipeline:
     """Build ``CSP → log-variance → LDA``.
 
@@ -22,6 +24,8 @@ def make_motor_imagery_pipeline(
     """
     if csp is None:
         csp = CustomCSP(n_components=n_csp_components)
+
+    clf = CustomLogisticRegression() if use_bonus else LinearDiscriminantAnalysis()
     return Pipeline(
         [
             ("csp", csp),
@@ -29,6 +33,6 @@ def make_motor_imagery_pipeline(
                 "logvar",
                 LogVarianceTransformer(filters_per_end=logvar_filters_per_end),
             ),
-            ("clf", LinearDiscriminantAnalysis()),
+            ("clf", clf),
         ]
     )
