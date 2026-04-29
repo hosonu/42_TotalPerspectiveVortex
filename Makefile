@@ -19,6 +19,13 @@ CLI_PY      := $(SRC_DIR)/mybci.py
 # Parameters (can be overridden: make train RUNS="3 7 11" SUBJECT=5)
 SUBJECT     ?= 1
 RUNS        ?= 4 8 12
+BONUS ?= 0
+
+ifeq ($(BONUS),1)
+    BONUS_FLAG := --bonus
+else
+    BONUS_FLAG :=
+endif
 
 # Rules
 .PHONY: all help install sync run main train predict lint format fmt check clean fclean re
@@ -62,6 +69,9 @@ train: sync
 predict: sync
 	@echo "==> Running playback simulation..."
 	$(PYTHON) $(CLI_PY) $(RUNS) predict --subject $(SUBJECT)
+
+bonus:
+	$(MAKE) train BONUS=1
 
 # Development Tools
 lint:
