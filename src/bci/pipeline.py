@@ -26,13 +26,15 @@ def make_motor_imagery_pipeline(
         csp = CustomCSP(n_components=n_csp_components)
 
     clf = CustomLogisticRegression() if use_bonus else LinearDiscriminantAnalysis()
+
+    if use_bonus:
+        feature_extractor = WaveletTransformer()
+    else:
+        feature_extractor = LogVarianceTransformer(filters_per_end=logvar_filters_per_end)
     return Pipeline(
         [
             ("csp", csp),
-            (
-                "logvar",
-                LogVarianceTransformer(filters_per_end=logvar_filters_per_end),
-            ),
+            ("features", feature_extractor,),
             ("clf", clf),
         ]
     )
