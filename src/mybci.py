@@ -28,7 +28,7 @@ def do_train(subject, runs, use_bonus=False):
     X, y = epochs_to_Xy(epochs)
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y)
+        X, y, test_size=0.5, random_state=42, stratify=y)
 
     # Build pipeline
     pipeline = make_motor_imagery_pipeline(
@@ -141,7 +141,7 @@ def do_evaluate_all(use_bonus=False):
     for exp_id, runs in experiments.items():
         print(f"Processing Experiment {exp_id}...")
 
-        for subject in range(1, 110):
+        for subject in range(1, 10):
             try:
                 epochs = build_epochs(subject, runs)
                 X, y = epochs_to_Xy(epochs)
@@ -176,8 +176,9 @@ def do_evaluate_all(use_bonus=False):
 
 
 def main():
-    if len(sys.argv) == 1:
-        do_evaluate_all()
+    if len(sys.argv) == 1 or (len(sys.argv) == 2 and sys.argv[1] == "--bonus"):
+        use_bonus = "--bonus" in sys.argv
+        do_evaluate_all(use_bonus=use_bonus)
         sys.exit(0)
 
     parser = argparse.ArgumentParser(
