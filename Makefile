@@ -60,7 +60,7 @@ install sync:
 # Main Tasks
 run main: sync
 	@echo "==> Running bulk evaluation on all subjects..."
-	$(PYTHON) $(CLI_PY)
+	$(PYTHON) $(CLI_PY) $(BONUS_FLAG)
 
 train: sync
 	@echo "==> Training model..."
