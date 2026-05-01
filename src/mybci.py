@@ -4,19 +4,17 @@ import argparse
 import numpy as np
 import joblib
 from pathlib import Path
-from sklearn.model_selection import StratifiedKFold, cross_val_score
-
+from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 # Import local BCI package (adjust paths if your layout differs).
-try:
-    from bci.pipeline import make_motor_imagery_pipeline
-    from bci.epochs import build_epochs  # or from bci.data
-    from bci.data import epochs_to_Xy
-except ImportError:
-    print("Error: bci module not found. Check PYTHONPATH.")
-    sys.exit(1)
+from bci.pipeline import make_motor_imagery_pipeline
+from bci.epochs import build_epochs  # or from bci.data
+from bci.data import epochs_to_Xy
 
 def get_model_file(use_bonus):
     return "bonus_bci_model.pkl" if use_bonus else "saved_bci_model.pkl"
+
+def get_test_data_file(use_bonus):
+    return "bonus_test_data.pkl" if use_bonus else "test_data.pkl"
 
 def do_train(subject, runs, use_bonus=False):
     """
@@ -25,6 +23,8 @@ def do_train(subject, runs, use_bonus=False):
     print(f"Loading data for subject {subject}, runs {runs}...")
     epochs = build_epochs(subject, runs=runs)
     X, y = epochs_to_Xy(epochs)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
     # Build pipeline
     pipeline = make_motor_imagery_pipeline(n_csp_components=6, use_bonus=use_bonus)
@@ -39,9 +39,15 @@ def do_train(subject, runs, use_bonus=False):
     # Fit on all data and persist the model
     print("\nTraining final model on all provided data...")
     pipeline.fit(X, y)
+
     model_file = get_model_file(use_bonus)
+    test_file = get_test_data_file(use_bonus)
+
     joblib.dump(pipeline, model_file)
+    joblib.dump((X_test, y_test), test_file)
+
     print(f"Model saved to {model_file}")
+    print(f"Hold-out test data saved to {test_file}")
 
 
 def do_predict(subject, runs, use_bonus=False):
@@ -49,6 +55,8 @@ def do_predict(subject, runs, use_bonus=False):
     Load the saved model and simulate a data stream, predicting one epoch at a time.
     """
     model_file = get_model_file(use_bonus)
+    test_file = get_test_data_file(use_bonus)
+
     model_path = Path(model_file)
     if not model_path.exists():
         print(f"Error: Model file '{model_file}' not found. Please run 'train' first.")
@@ -57,21 +65,20 @@ def do_predict(subject, runs, use_bonus=False):
     print(f"Loading model from {model_file}...")
     pipeline = joblib.load(model_file)
 
-    print(f"Loading data for subject {subject}, runs {runs} for playback...")
-    epochs = build_epochs(subject, runs=runs)
-    X, y = epochs_to_Xy(epochs)
+    print(f"Loading never-learned test data from {test_file}...")
+    X_test, y_test = joblib.load(test_file)
 
     print("\nStarting playback simulation...\n")
     correct_predictions = 0
-    total_epochs = len(X)
+    total_epochs = len(X_test)
 
     # Simulate a real-time stream (one epoch per step)
     for i in range(total_epochs):
         start_time = time.time()
         
         # One epoch chunk; shape: (1, n_channels, n_times)
-        X_chunk = X[i:i+1]
-        truth = y[i]
+        X_chunk = X_test[i:i+1]
+        truth = y_test[i]
 
         # Run prediction
         prediction = pipeline.predict(X_chunk)[0]
