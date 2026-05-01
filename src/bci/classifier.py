@@ -24,6 +24,9 @@ class CustomLogisticRegression(BaseEstimator, ClassifierMixin):
         self.weights = np.zeros(n_features)
         self.bias = 0
 
+        self.classes_ = np.unique(y)
+        self.is_fitted = True
+
         # Train with gradient descent
         for _ in range(self.n_iterations):
             linear_model = np.dot(X, self.weights) + self.bias
