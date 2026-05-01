@@ -10,11 +10,14 @@ from bci.pipeline import make_motor_imagery_pipeline
 from bci.epochs import build_epochs  # or from bci.data
 from bci.data import epochs_to_Xy
 
+
 def get_model_file(use_bonus):
     return "bonus_bci_model.pkl" if use_bonus else "saved_bci_model.pkl"
 
+
 def get_test_data_file(use_bonus):
     return "bonus_test_data.pkl" if use_bonus else "test_data.pkl"
+
 
 def do_train(subject, runs, use_bonus=False):
     """
@@ -24,15 +27,17 @@ def do_train(subject, runs, use_bonus=False):
     epochs = build_epochs(subject, runs=runs)
     X, y = epochs_to_Xy(epochs)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y)
 
     # Build pipeline
-    pipeline = make_motor_imagery_pipeline(n_csp_components=6, use_bonus=use_bonus)
+    pipeline = make_motor_imagery_pipeline(
+        n_csp_components=6, use_bonus=use_bonus)
 
     # Cross-validation (aligned with the PDF example output)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     scores = cross_val_score(pipeline, X, y, cv=cv, n_jobs=-1)
-    
+
     print(f"cross_val_score: {np.mean(scores):.4f}")
     print(f"Fold accuracies: {scores}")
 
@@ -59,7 +64,8 @@ def do_predict(subject, runs, use_bonus=False):
 
     model_path = Path(model_file)
     if not model_path.exists():
-        print(f"Error: Model file '{model_file}' not found. Please run 'train' first.")
+        print(
+            f"Error: Model file '{model_file}' not found. Please run 'train' first.")
         sys.exit(1)
 
     print(f"Loading model from {model_file}...")
@@ -75,17 +81,17 @@ def do_predict(subject, runs, use_bonus=False):
     # Simulate a real-time stream (one epoch per step)
     for i in range(total_epochs):
         start_time = time.time()
-        
+
         # One epoch chunk; shape: (1, n_channels, n_times)
         X_chunk = X_test[i:i+1]
         truth = y_test[i]
 
         # Run prediction
         prediction = pipeline.predict(X_chunk)[0]
-        
+
         # Latency check (assignment: within 2 seconds)
         elapsed_time = time.time() - start_time
-        
+
         # Compare and print (PDF-style format)
         is_equal = (prediction == truth)
         if is_equal:
@@ -94,17 +100,19 @@ def do_predict(subject, runs, use_bonus=False):
         print(f"epoch {i:02d}:")
         print(f"[{prediction}]")
         print(f"[{truth}] {is_equal}")
-        
+
         # Optional: slow down if runs finish too fast for a streaming feel
         # time.sleep(0.5)
-        
+
         if elapsed_time > 2.0:
-            print(f"WARNING: Prediction took longer than 2 seconds! ({elapsed_time:.3f}s)")
+            print(
+                f"WARNING: Prediction took longer than 2 seconds! ({elapsed_time:.3f}s)")
 
         time.sleep(0.5)
 
     accuracy = correct_predictions / total_epochs
     print(f"\nAccuracy: {accuracy:.4f}")
+
 
 def do_evaluate_all(use_bonus=False):
     """
@@ -138,7 +146,8 @@ def do_evaluate_all(use_bonus=False):
                 epochs = build_epochs(subject, runs)
                 X, y = epochs_to_Xy(epochs)
 
-                pipeline = make_motor_imagery_pipeline(n_csp_components=6, use_bonus=use_bonus)
+                pipeline = make_motor_imagery_pipeline(
+                    n_csp_components=6, use_bonus=use_bonus)
 
                 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
@@ -155,7 +164,8 @@ def do_evaluate_all(use_bonus=False):
             exp_mean = float(np.mean(results[exp_id]))
             print(f"experiment {exp_id}:\naccuracy = {exp_mean:.4f}\n")
         else:
-            print(f"experiment {exp_id}:\naccuracy = N/A (No valid subjects)\n")
+            print(
+                f"experiment {exp_id}:\naccuracy = N/A (No valid subjects)\n")
 
     all_scores = [float(np.mean(res)) for res in results.values() if res]
     if all_scores:
@@ -170,12 +180,17 @@ def main():
         do_evaluate_all()
         sys.exit(0)
 
-    parser = argparse.ArgumentParser(description="Brain Computer Interface CLI")
+    parser = argparse.ArgumentParser(
+        description="Brain Computer Interface CLI")
     # Args match the PDF example: python mybci.py 4 14 train
-    parser.add_argument("runs", metavar="N", type=int, nargs="+", help="Run numbers (e.g., 4 14)")
-    parser.add_argument("mode", choices=["train", "predict"], help="Mode to run: 'train' or 'predict'")
-    parser.add_argument("--subject", type=int, default=1, help="Subject ID (default: 1)")
-    parser.add_argument("--bonus", action="store_true", help="Use the custom classifier (Bonus part)")
+    parser.add_argument("runs", metavar="N", type=int,
+                        nargs="+", help="Run numbers (e.g., 4 14)")
+    parser.add_argument(
+        "mode", choices=["train", "predict"], help="Mode to run: 'train' or 'predict'")
+    parser.add_argument("--subject", type=int, default=1,
+                        help="Subject ID (default: 1)")
+    parser.add_argument("--bonus", action="store_true",
+                        help="Use the custom classifier (Bonus part)")
 
     args = parser.parse_args()
 
@@ -186,6 +201,7 @@ def main():
         do_train(args.subject, args.runs)
     elif args.mode == "predict":
         do_predict(args.subject, args.runs)
+
 
 if __name__ == "__main__":
     main()

@@ -39,7 +39,8 @@ DEFAULT_SAVE_TEMPLATE = "mne_data/epochs_s{subject:03d}-epo.fif"
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Build motor-imagery Epochs from EEGBCI.")
+    p = argparse.ArgumentParser(
+        description="Build motor-imagery Epochs from EEGBCI.")
     p.add_argument(
         "subject",
         nargs="?",
@@ -68,7 +69,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def validate_subject(subject: int) -> None:
     if not 1 <= subject <= 109:
-        print(f"Error: subject must be between 1 and 109, got {subject}.", file=sys.stderr)
+        print(
+            f"Error: subject must be between 1 and 109, got {subject}.", file=sys.stderr)
         sys.exit(1)
 
 
@@ -84,7 +86,8 @@ def build_epochs(subject: int) -> mne.Epochs:
             file=sys.stderr,
         )
 
-    picks = mne.pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+    picks = mne.pick_types(raw.info, meg=False, eeg=True,
+                           stim=False, eog=False, exclude="bads")
 
     epochs = mne.Epochs(
         raw,
@@ -112,7 +115,8 @@ def print_epoch_summary(epochs: mne.Epochs, subject: int) -> None:
     print(f"Time window : {TMIN} – {TMAX} s (baseline {BASELINE})")
     print(f"Bandpass    : {L_FREQ} – {H_FREQ} Hz (on continuous data)")
     print(f"Channels    : {epochs.info['nchan']} EEG")
-    print(f"Epoch shape : {epochs.get_data().shape}  (epochs × channels × time samples)")
+    print(
+        f"Epoch shape : {epochs.get_data().shape}  (epochs × channels × time samples)")
     print("=" * 60)
 
 
@@ -124,12 +128,14 @@ def main(argv: list[str] | None = None) -> None:
     if args.commit_save:
         save_path = DEFAULT_SAVE_TEMPLATE.format(subject=args.subject)
 
-    print(f"\n>>> Loading & filtering subject {args.subject}, runs {IMAGERY_RUNS} …")
+    print(
+        f"\n>>> Loading & filtering subject {args.subject}, runs {IMAGERY_RUNS} …")
     epochs = build_epochs(args.subject)
     print_epoch_summary(epochs, args.subject)
 
     if save_path:
-        out = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", save_path))
+        out = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), "..", save_path))
         parent = os.path.dirname(out)
         if parent:
             os.makedirs(parent, exist_ok=True)

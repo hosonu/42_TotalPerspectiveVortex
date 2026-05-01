@@ -69,5 +69,6 @@ def print_epoch_summary(epochs: mne.Epochs, subject: int, runs: list[int] | None
     print(f"Time window : {TMIN} – {TMAX} s (baseline {BASELINE})")
     print(f"Bandpass    : {L_FREQ} – {H_FREQ} Hz (on continuous data)")
     print(f"Channels    : {epochs.info['nchan']} EEG")
-    print(f"Epoch shape : {epochs.get_data().shape}  (epochs × channels × time samples)")
+    print(
+        f"Epoch shape : {epochs.get_data().shape}  (epochs × channels × time samples)")
     print("=" * 60)

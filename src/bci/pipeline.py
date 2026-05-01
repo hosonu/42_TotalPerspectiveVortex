@@ -32,7 +32,8 @@ def make_motor_imagery_pipeline(
     if use_bonus:
         feature_extractor = WaveletTransformer()
     else:
-        feature_extractor = LogVarianceTransformer(filters_per_end=logvar_filters_per_end)
+        feature_extractor = LogVarianceTransformer(
+            filters_per_end=logvar_filters_per_end)
     return Pipeline(
         [
             ("csp", csp),

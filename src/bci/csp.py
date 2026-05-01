@@ -31,7 +31,6 @@ class CustomCSP(BaseEstimator, TransformerMixin):
         Number of EEG channels seen during :meth:`fit`.
     """
 
-
     def __init__(self, n_components: int = 6) -> None:
         self.n_components = n_components
 
@@ -69,17 +68,17 @@ class CustomCSP(BaseEstimator, TransformerMixin):
                 if trace > 0:
                     C = C / trace
                 trial_covs.append(C)
-            
+
             # Append the mean covariance matrix for the current class
             covs.append(np.mean(trial_covs, axis=0))
-        
+
         C_0 = covs[0]
         C_1 = covs[1]
 
         # Add a tiny value to the diagonal to make the matrices positive-definite
         epsilon = 1e-6
         n_channels = C_0.shape[0]
-        
+
         # You can scale epsilon by the trace to make it proportional to the data variance
         C_0_reg = C_0 + epsilon * np.trace(C_0) * np.eye(n_channels)
         C_1_reg = C_1 + epsilon * np.trace(C_1) * np.eye(n_channels)

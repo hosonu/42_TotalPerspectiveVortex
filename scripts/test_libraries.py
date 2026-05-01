@@ -26,7 +26,8 @@ def test_sklearn():
     y_pred = clf.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
 
-    print(f"✓ Created dataset with {X.shape[0]} samples and {X.shape[1]} features")
+    print(
+        f"✓ Created dataset with {X.shape[0]} samples and {X.shape[1]} features")
     print(f"✓ Trained LogisticRegression model")
     print(f"✓ Model accuracy on test set: {accuracy:.2%}")
     print()
