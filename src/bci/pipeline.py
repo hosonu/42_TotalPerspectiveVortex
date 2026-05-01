@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 from bci.csp import CustomCSP
 from bci.features import LogVarianceTransformer
 from bci.classifier import CustomLogisticRegression
+from bci.wavelet import WaveletTransformer
 
 
 def make_motor_imagery_pipeline(
@@ -35,6 +37,7 @@ def make_motor_imagery_pipeline(
         [
             ("csp", csp),
             ("features", feature_extractor,),
+            ("scaler", StandardScaler()),
             ("clf", clf),
         ]
     )
