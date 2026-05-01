@@ -219,7 +219,7 @@ __marimo__/
 mne_data/
 
 # Saved model
-saved_bci_model.pkl
+*.pkl
 
 # Project files
 Total-perspective-vortex.pdf
