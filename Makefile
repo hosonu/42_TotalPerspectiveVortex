@@ -64,11 +64,11 @@ run main: sync
 
 train: sync
 	@echo "==> Training model..."
-	$(PYTHON) $(CLI_PY) $(RUNS) train --subject $(SUBJECT)
+	$(PYTHON) $(CLI_PY) $(RUNS) train --subject $(SUBJECT) $(BONUS_FLAG)
 
 predict: sync
 	@echo "==> Running playback simulation..."
-	$(PYTHON) $(CLI_PY) $(RUNS) predict --subject $(SUBJECT)
+	$(PYTHON) $(CLI_PY) $(RUNS) predict --subject $(SUBJECT) $(BONUS_FLAG)
 
 bonus:
 	$(MAKE) train BONUS=1
