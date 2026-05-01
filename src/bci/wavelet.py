@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import signal
+import pywt
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
@@ -16,6 +16,7 @@ class WaveletTransformer(BaseEstimator, TransformerMixin):
         self.fs = fs  # PhysioNet EEGBCI sampling rate is 160 Hz
 
     def fit(self, X, y=None):
+        self.is_fitted = True
         return self
 
     def transform(self, X):
@@ -23,24 +24,26 @@ class WaveletTransformer(BaseEstimator, TransformerMixin):
         features = []
 
         # Morlet wavelet parameter (wavelet width)
-        w = 5.0
+        wavelet = 'cmor1.5-1.0'
+
+        # Map target frequencies (Hz) to PyWavelets scale values
+        scales = pywt.central_frequency(wavelet) / (self.freqs / self.fs)
 
         for i in range(n_trials):
             trial_features = []
             for c in range(n_components):
                 sig = X[i, c, :]
 
-                # Compute scales and run the continuous wavelet transform
-                widths = w * self.fs / (2 * self.freqs * np.pi)
-                cwtmatr = signal.cwt(sig, signal.morlet2, widths, w=w)
+                # Continuous wavelet transform via PyWavelets
+                cwtmatr, _ = pywt.cwt(sig, scales, wavelet)
 
-                # Power (squared amplitude)
+                # Power (squared magnitude)
                 power = np.abs(cwtmatr) ** 2
 
-                # Average over time: mean power per frequency band as features
+                # Average over time
                 mean_power_per_freq = np.mean(power, axis=1)
 
-                # Log transform for normalization (analogous to log-variance)
+                # Log transform for normalization
                 log_power = np.log(mean_power_per_freq + 1e-7)
 
                 trial_features.extend(log_power)
