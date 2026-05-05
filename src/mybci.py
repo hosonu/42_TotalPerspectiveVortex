@@ -3,13 +3,34 @@ import time
 import argparse
 import numpy as np
 import joblib
+import os
+import warnings
+from contextlib import contextmanager
 from pathlib import Path
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 # Import local BCI package (adjust paths if your layout differs).
+
+import mne
+mne.set_log_level('ERROR')
+warnings.filterwarnings("ignore")
+
 from bci.pipeline import make_motor_imagery_pipeline
-from bci.epochs import build_epochs  # or from bci.data
+from bci.epochs import build_epochs
 from bci.data import epochs_to_Xy
 
+@contextmanager
+def suppress_stdout_stderr():
+    """MNE-Python logging suppression context manager"""
+    with open(os.devnull, 'w') as fnull:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = fnull
+        sys.stderr = fnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
 
 def get_model_file(use_bonus):
     return "bonus_bci_model.pkl" if use_bonus else "saved_bci_model.pkl"
@@ -23,7 +44,6 @@ def do_train(subject, runs, use_bonus=False):
     """
     Train the pipeline on the given runs, print cross-validation scores, then save the model.
     """
-    print(f"Loading data for subject {subject}, runs {runs}...")
     epochs = build_epochs(subject, runs=runs)
     X, y = epochs_to_Xy(epochs)
 
@@ -38,11 +58,11 @@ def do_train(subject, runs, use_bonus=False):
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     scores = cross_val_score(pipeline, X, y, cv=cv, n_jobs=-1)
 
+    scores_str = " ".join([f"{s:.4f}" for s in scores])
+    print(f"[{scores_str}]")
     print(f"cross_val_score: {np.mean(scores):.4f}")
-    print(f"Fold accuracies: {scores}")
 
     # Fit on all data and persist the model
-    print("\nTraining final model on all provided data...")
     pipeline.fit(X, y)
 
     model_file = get_model_file(use_bonus)
@@ -51,8 +71,8 @@ def do_train(subject, runs, use_bonus=False):
     joblib.dump(pipeline, model_file)
     joblib.dump((X_test, y_test), test_file)
 
-    print(f"Model saved to {model_file}")
-    print(f"Hold-out test data saved to {test_file}")
+    # print(f"Model saved to {model_file}")
+    # print(f"Hold-out test data saved to {test_file}")
 
 
 def do_predict(subject, runs, use_bonus=False):
@@ -68,16 +88,14 @@ def do_predict(subject, runs, use_bonus=False):
             f"Error: Model file '{model_file}' not found. Please run 'train' first.")
         sys.exit(1)
 
-    print(f"Loading model from {model_file}...")
     pipeline = joblib.load(model_file)
 
-    print(f"Loading never-learned test data from {test_file}...")
     X_test, y_test = joblib.load(test_file)
 
-    print("\nStarting playback simulation...\n")
     correct_predictions = 0
     total_epochs = len(X_test)
 
+    print("epoch nb: [prediction] [truth] equal?")
     # Simulate a real-time stream (one epoch per step)
     for i in range(total_epochs):
         start_time = time.time()
@@ -97,21 +115,18 @@ def do_predict(subject, runs, use_bonus=False):
         if is_equal:
             correct_predictions += 1
 
-        print(f"epoch {i:02d}:")
-        print(f"[{prediction}]")
-        print(f"[{truth}] {is_equal}")
+        pred_out = prediction + 1
+        truth_out = truth + 1
+        print(f"epoch {i:02d}: [{pred_out}] [{truth_out}] {is_equal}")
 
-        # Optional: slow down if runs finish too fast for a streaming feel
-        # time.sleep(0.5)
-
-        if elapsed_time > 2.0:
+        if elapsed_time > time.time() - start_time:
             print(
                 f"WARNING: Prediction took longer than 2 seconds! ({elapsed_time:.3f}s)")
 
         time.sleep(0.5)
 
     accuracy = correct_predictions / total_epochs
-    print(f"\nAccuracy: {accuracy:.4f}")
+    print(f"Accuracy: {accuracy:.4f}")
 
 
 def do_evaluate_all(use_bonus=False):
@@ -139,9 +154,8 @@ def do_evaluate_all(use_bonus=False):
     results = {exp_id: [] for exp_id in experiments}
 
     for exp_id, runs in experiments.items():
-        print(f"Processing Experiment {exp_id}...")
 
-        for subject in range(1, 10):
+        for subject in range(1, 110):
             try:
                 epochs = build_epochs(subject, runs)
                 X, y = epochs_to_Xy(epochs)
@@ -156,18 +170,19 @@ def do_evaluate_all(use_bonus=False):
                 mean_score = float(np.mean(scores))
                 results[exp_id].append(mean_score)
 
-            except Exception as e:
-                print(f"  Warning - Subject {subject:03d}: Error - {e}")
+                print(f"experiment {exp_id}: subject {subject:03d}: accuracy = {mean_score:.1f}")
+
+            except Exception:
                 continue
 
+    print("Mean accuracy of the six different experiments for all 109 subjects:")
+    all_scores = []
+    for exp_id in experiments:
         if results[exp_id]:
             exp_mean = float(np.mean(results[exp_id]))
-            print(f"experiment {exp_id}:\naccuracy = {exp_mean:.4f}\n")
-        else:
-            print(
-                f"experiment {exp_id}:\naccuracy = N/A (No valid subjects)\n")
+            print(f"experiment {exp_id}: accuracy = {exp_mean:.4f}")
+            all_scores.append(exp_mean)
 
-    all_scores = [float(np.mean(res)) for res in results.values() if res]
     if all_scores:
         total_mean = float(np.mean(all_scores))
         print(f"Mean accuracy of 6 experiments: {total_mean:.4f}")
@@ -183,7 +198,7 @@ def main():
 
     parser = argparse.ArgumentParser(
         description="Brain Computer Interface CLI")
-    # Args match the PDF example: python mybci.py 4 14 train
+
     parser.add_argument("runs", metavar="N", type=int,
                         nargs="+", help="Run numbers (e.g., 4 14)")
     parser.add_argument(
