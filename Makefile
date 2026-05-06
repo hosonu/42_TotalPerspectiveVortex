@@ -3,10 +3,18 @@
 # ==============================================================================
 
 # Variables
-UV          ?= uv
+LOCAL_BIN 	:= ./bin
+VENV 		:= ./.venv
+UV 			:= $(LOCAL_BIN)/uv
+UV_PY 		:= ./uv_python
+UV_CACHE 	:= ./uv_cache
 PYTHON      := $(UV) run python
 FLAKE8      := $(UV) run flake8
 PEP8        := $(UV) run autopep8
+
+# Virtual environment
+export UV_PYTHON_INSTALL_DIR := $(UV_PY)
+export UV_CACHE_DIR := $(UV_CACHE)
 
 # Directories
 SRC_DIR     := src
@@ -55,9 +63,23 @@ help:
 	@echo "    make fclean         Complete cleanup including .venv and saved model"
 	@echo "    make re             Full reinstallation"
 
+$(UV):
+	@echo "Downloading uv locally into ./bin..."
+	@mkdir -p $(LOCAL_BIN)
+	curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="$(shell pwd)/bin" INSTALLER_NO_MODIFY_PATH=1 UV_NO_MODIFY_PATH=1 sh
+
 # Dependency Management
-install sync:
+pre:
+	@echo "Creating directories in this project directory..."
+	@mkdir -p $(UV_PY)
+	@mkdir -p $(UV_CACHE)
+
+sync: pre $(UV)
+	@echo "Syncing environment with uv.lock..."
 	$(UV) sync
+
+install: sync
+	@echo "Done! Environment is ready."
 
 # Main Tasks
 run main: sync
