@@ -15,6 +15,7 @@ MODEL_FILE  := saved_bci_model.pkl
 
 # Entry Point
 CLI_PY      := $(SRC_DIR)/mybci.py
+VIS_PY		:= $(SRC_DIR)/visualize.py
 
 # Parameters (can be overridden: make train RUNS="3 7 11" SUBJECT=5)
 SUBJECT     ?= 1
@@ -42,6 +43,7 @@ help:
 	@echo "    make run            Full evaluation for all subjects (no arguments)"
 	@echo "    make train          Train model with RUNS='$(RUNS)'"
 	@echo "    make predict        Playback simulation with RUNS='$(RUNS)'"
+	@echo "    make visualize      Visualize raw/filtered EEG data with RUNS='$(RUNS)'"
 	@echo ""
 	@echo "  Development:"
 	@echo "    make lint           Run flake8 on src and scripts"
@@ -70,8 +72,13 @@ predict: sync
 	@echo "==> Running playback simulation..."
 	$(PYTHON) $(CLI_PY) $(RUNS) predict --subject $(SUBJECT) $(BONUS_FLAG)
 
+visualize: sync
+	@echo "==> Visualizing raw and filtered EEG data..."
+	$(PYTHON) $(VIS_PY) $(RUNS) --subject $(SUBJECT)
+
 bonus:
-	$(MAKE) train BONUS=1
+	@echo "==> Evaluating bonus pipeline on all subjects..."
+	$(PYTHON) $(CLI_PY) --bonus
 
 # Development Tools
 lint:
