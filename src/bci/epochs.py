@@ -32,10 +32,9 @@ def build_epochs(
 
     events, event_id = mne.events_from_annotations(raw, event_id=EVENT_ID)
     if len(events) == 0:
-        warnings.warn(
-            "No T1/T2 events found after filtering annotations. Check run list.",
-            RuntimeWarning,
-            stacklevel=2,
+        raise ValueError(
+            f"No T1/T2 events found in runs {runs} for subject {subject}. "
+            "These runs might be baseline recordings (e.g., Run 1 or 2)."
         )
 
     picks = mne.pick_types(
