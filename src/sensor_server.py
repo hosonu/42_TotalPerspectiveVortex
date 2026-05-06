@@ -1,3 +1,4 @@
+from math import e
 from operator import truth
 import socket
 import pickle
@@ -21,11 +22,11 @@ def start_server(host, port, subject, runs):
     print(f"\n[Hardware Mock] Listening on {host}:{port}...")
     print("Waiting for AI Client to connect...")
 
-    conn, addr = server_socket.accept()
-    print(f"\n[Hardware Mock] Connected by AI Client: {addr}")
-    print("[Hardware Mock] Starting EEG data stream...\n")
-
     try:
+        conn, addr = server_socket.accept()
+        print(f"\n[Hardware Mock] Connected by AI Client: {addr}")
+        print("[Hardware Mock] Starting EEG data stream...\n")
+
         for i in range(len(X)):
             trial_data = X[i:i+1]
             truth_label = y[i]
@@ -39,6 +40,9 @@ def start_server(host, port, subject, runs):
             print(f"Sent Trial {i+1}/{len(X)} (Size: {len(data_bytes)} bytes)")
 
             time.sleep(1.0)
+    
+    except KeyboardInterrupt:
+        print("\n[Hardware Mock] Server stopped by user (KeyboardInterrupt).")
     except ConnectionResetError:
         print("\n[Hardware Mock] Client disconnected.")
     finally:
