@@ -2,12 +2,14 @@ import sys
 import time
 import argparse
 import numpy as np
+import threading
+import queue
 import joblib
 import os
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
-from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 # Import local BCI package (adjust paths if your layout differs).
 
 import mne
@@ -35,11 +37,6 @@ def suppress_stdout_stderr():
 def get_model_file(use_bonus):
     return "bonus_bci_model.pkl" if use_bonus else "saved_bci_model.pkl"
 
-
-def get_test_data_file(use_bonus):
-    return "bonus_test_data.pkl" if use_bonus else "test_data.pkl"
-
-
 def do_train(subject, runs, use_bonus=False):
     """
     Train the pipeline on the given runs, print cross-validation scores, then save the model.
@@ -47,14 +44,11 @@ def do_train(subject, runs, use_bonus=False):
     epochs = build_epochs(subject, runs=runs)
     X, y = epochs_to_Xy(epochs)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.5, random_state=42, stratify=y)
-
     # Build pipeline
     pipeline = make_motor_imagery_pipeline(
         n_csp_components=6, use_bonus=use_bonus)
 
-    # Cross-validation (aligned with the PDF example output)
+    # Cross-validation
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     scores = cross_val_score(pipeline, X, y, cv=cv, n_jobs=-1)
 
@@ -66,22 +60,14 @@ def do_train(subject, runs, use_bonus=False):
     pipeline.fit(X, y)
 
     model_file = get_model_file(use_bonus)
-    test_file = get_test_data_file(use_bonus)
 
     joblib.dump(pipeline, model_file)
-    joblib.dump((X_test, y_test), test_file)
-
-    # print(f"Model saved to {model_file}")
-    # print(f"Hold-out test data saved to {test_file}")
-
 
 def do_predict(subject, runs, use_bonus=False):
     """
     Load the saved model and simulate a data stream, predicting one epoch at a time.
     """
     model_file = get_model_file(use_bonus)
-    test_file = get_test_data_file(use_bonus)
-
     model_path = Path(model_file)
     if not model_path.exists():
         print(
@@ -90,40 +76,50 @@ def do_predict(subject, runs, use_bonus=False):
 
     pipeline = joblib.load(model_file)
 
-    X_test, y_test = joblib.load(test_file)
+    epochs = build_epochs(subject, runs=runs)
+    X,y = epochs_to_Xy(epochs)
+
+    data_queue = queue.Queue()
+    total_epochs = len(X)
+
+    def eeg_producer():
+        for i in range(total_epochs):
+            data_queue.put({
+                'epoch_nb': i + 1,
+                'X_chunk': X[i:i+1],
+                'y_truth': y[i]
+            })
+            time.sleep(0.5)
+        
+        data_queue.put(None)
+
+    producer_thread = threading.Thread(target=eeg_producer)
+    producer_thread.start()
 
     correct_predictions = 0
-    total_epochs = len(X_test)
-
     print("epoch nb: [prediction] [truth] equal?")
-    # Simulate a real-time stream (one epoch per step)
-    for i in range(total_epochs):
-        start_time = time.time()
+    while True:
+        item = data_queue.get()
+        if item is None:
+            break
 
-        # One epoch chunk; shape: (1, n_channels, n_times)
-        X_chunk = X_test[i:i+1]
-        truth = y_test[i]
+        epoch_nb = item['epoch_nb']
+        X_chunk = item['X_chunk']
+        y_truth = item['y_truth']
 
         # Run prediction
         prediction = pipeline.predict(X_chunk)[0]
 
-        # Latency check (assignment: within 2 seconds)
-        elapsed_time = time.time() - start_time
-
         # Compare and print (PDF-style format)
-        is_equal = (prediction == truth)
+        is_equal = (prediction == y_truth)
         if is_equal:
             correct_predictions += 1
 
         pred_out = prediction + 1
-        truth_out = truth + 1
-        print(f"epoch {i:02d}: [{pred_out}] [{truth_out}] {is_equal}")
+        truth_out = y_truth + 1
+        print(f"epoch {epoch_nb:02d}: [{pred_out}] [{truth_out}] {is_equal}")
 
-        if elapsed_time > time.time() - start_time:
-            print(
-                f"WARNING: Prediction took longer than 2 seconds! ({elapsed_time:.3f}s)")
-
-        time.sleep(0.5)
+    producer_thread.join()
 
     accuracy = correct_predictions / total_epochs
     print(f"Accuracy: {accuracy:.4f}")
