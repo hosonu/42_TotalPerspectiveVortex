@@ -49,6 +49,9 @@ def start_client(host, port, use_bonus, runs):
             raw_msglen = recvall(client_socket, 4)
             if not raw_msglen:
                 break
+            if len(raw_msglen) < 4:
+                print("\n[AI Client] Error: Incomplete message length received.")
+                break
         
             msglen = struct.unpack('>I', raw_msglen)[0]
             if msglen == 0:
@@ -56,7 +59,11 @@ def start_client(host, port, use_bonus, runs):
                 break
 
             data_bytes = recvall(client_socket, msglen)
-            X_trial, truth = pickle.loads(data_bytes)
+            try:
+                X_trial, truth = pickle.loads(data_bytes)
+            except (pickle.UnpicklingError, EOFError, TypeError) as e:
+                print(f"\n[AI Client] Error decoding payload: {e}")
+                break
 
             prediction = pipeline.predict(X_trial)[0]
             is_equal = (prediction == truth)
