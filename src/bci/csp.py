@@ -65,8 +65,12 @@ class CustomCSP(BaseEstimator, TransformerMixin):
                 C = np.dot(E, E.T)
                 # Normalize by its trace
                 trace = np.trace(C)
-                if trace > 0:
+
+                if trace > 1e-12:
                     C = C / trace
+                else:
+                    C = np.eye(C.shape[0] / C.shape[0])
+
                 trial_covs.append(C)
 
             # Append the mean covariance matrix for the current class
