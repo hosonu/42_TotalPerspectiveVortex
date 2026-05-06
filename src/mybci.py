@@ -94,35 +94,41 @@ def do_predict(subject, runs, use_bonus=False):
         data_queue.put(None)
 
     producer_thread = threading.Thread(target=eeg_producer)
+    producer_thread.daemon = True
     producer_thread.start()
 
     correct_predictions = 0
     print("epoch nb: [prediction] [truth] equal?")
-    while True:
-        item = data_queue.get()
-        if item is None:
-            break
+    try:
+        while True:
+            item = data_queue.get()
+            if item is None:
+                break
 
-        epoch_nb = item['epoch_nb']
-        X_chunk = item['X_chunk']
-        y_truth = item['y_truth']
+            epoch_nb = item['epoch_nb']
+            X_chunk = item['X_chunk']
+            y_truth = item['y_truth']
 
-        # Run prediction
-        prediction = pipeline.predict(X_chunk)[0]
+            # Run prediction
+            prediction = pipeline.predict(X_chunk)[0]
 
-        # Compare and print (PDF-style format)
-        is_equal = (prediction == y_truth)
-        if is_equal:
-            correct_predictions += 1
+            # Compare and print (PDF-style format)
+            is_equal = (prediction == y_truth)
+            if is_equal:
+                correct_predictions += 1
 
-        pred_out = prediction + 1
-        truth_out = y_truth + 1
-        print(f"epoch {epoch_nb:02d}: [{pred_out}] [{truth_out}] {is_equal}")
-
+            pred_out = prediction + 1
+            truth_out = y_truth + 1
+            print(f"epoch {epoch_nb:02d}: [{pred_out}] [{truth_out}] {is_equal}")
+    
+    except KeyboardInterrupt:
+        print("\n[Predict] Stopped by user.")
+    finally:
+        if total_epochs > 0:
+            accuracy = correct_predictions / total_epochs
+            print(f"Accuracy: {accuracy:.4f}")
+        
     producer_thread.join()
-
-    accuracy = correct_predictions / total_epochs
-    print(f"Accuracy: {accuracy:.4f}")
 
 
 def do_evaluate_all(use_bonus=False):
@@ -149,34 +155,38 @@ def do_evaluate_all(use_bonus=False):
 
     results = {exp_id: [] for exp_id in experiments}
 
-    for exp_id, runs in experiments.items():
+    try:
+        for exp_id, runs in experiments.items():
 
-        for subject in range(1, 110):
-            try:
-                epochs = build_epochs(subject, runs)
-                X, y = epochs_to_Xy(epochs)
+            for subject in range(1, 110):
+                try:
+                    epochs = build_epochs(subject, runs)
+                    X, y = epochs_to_Xy(epochs)
 
-                pipeline = make_motor_imagery_pipeline(
-                    n_csp_components=6, use_bonus=use_bonus)
+                    pipeline = make_motor_imagery_pipeline(
+                        n_csp_components=6, use_bonus=use_bonus)
 
-                cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+                    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-                scores = cross_val_score(pipeline, X, y, cv=cv, n_jobs=-1)
+                    scores = cross_val_score(pipeline, X, y, cv=cv, n_jobs=-1)
 
-                mean_score = float(np.mean(scores))
-                results[exp_id].append(mean_score)
+                    mean_score = float(np.mean(scores))
+                    results[exp_id].append(mean_score)
 
-                print(f"experiment {exp_id}: subject {subject:03d}: accuracy = {mean_score:.1f}")
+                    print(f"experiment {exp_id}: subject {subject:03d}: accuracy = {mean_score:.1f}")
 
-            except Exception:
-                continue
+                except Exception:
+                    continue
+    except KeyboardInterrupt:
+        print("\n[Evaluation] Interrupted by user. Calculating partial results...")
 
     print("Mean accuracy of the six different experiments for all 109 subjects:")
     all_scores = []
     for exp_id in experiments:
         if results[exp_id]:
             exp_mean = float(np.mean(results[exp_id]))
-            print(f"experiment {exp_id}: accuracy = {exp_mean:.4f}")
+            evaluated_subjects_count = len(results[exp_id])
+            print(f"experiment {exp_id}: accuracy = {exp_mean:.4f} (based on {evaluated_subjects_count} subjects)")
             all_scores.append(exp_mean)
 
     if all_scores:
