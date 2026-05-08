@@ -1,4 +1,3 @@
-from operator import truth
 import sys
 import socket
 import pickle

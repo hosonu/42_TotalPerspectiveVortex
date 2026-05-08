@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
-
 import mne
 
 from bci.eegbci import H_FREQ, IMAGERY_RUNS, L_FREQ, bandpass_filter_raw, fetch_raw_eegbci

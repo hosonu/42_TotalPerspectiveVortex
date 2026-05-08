@@ -1,5 +1,3 @@
-from math import e
-from operator import truth
 import socket
 import pickle
 import struct
