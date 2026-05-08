@@ -10,11 +10,12 @@ UV_PY 		:= ./uv_python
 UV_CACHE 	:= ./uv_cache
 PYTHON      := $(UV) run python
 FLAKE8      := $(UV) run flake8
-PEP8        := $(UV) run autopep8
+AUTOPEP8        := $(UV) run autopep8
 
 # Virtual environment
 export UV_PYTHON_INSTALL_DIR := $(UV_PY)
 export UV_CACHE_DIR := $(UV_CACHE)
+export UV_PYTHON_INSTALL := auto
 
 # Directories
 SRC_DIR     := src
@@ -28,7 +29,7 @@ VIS_PY		:= $(SRC_DIR)/visualize.py
 # Parameters (can be overridden: make train RUNS="3 7 11" SUBJECT=5)
 SUBJECT     ?= 1
 RUNS        ?= 4 8 12
-BONUS ?= 0
+BONUS		?= 0
 
 ifeq ($(BONUS),1)
     BONUS_FLAG := --bonus
@@ -37,7 +38,7 @@ else
 endif
 
 # Rules
-.PHONY: all help install sync run main train predict lint format fmt check clean fclean re
+.PHONY: all help install pre sync run main train predict visualize lint format fmt check clean fclean re
 
 all: install
 
@@ -55,7 +56,7 @@ help:
 	@echo ""
 	@echo "  Development:"
 	@echo "    make lint           Run flake8 on src and scripts"
-	@echo "    make fmt            Run autopep8 formatter"
+	@echo "    make format / fmt   Run autopep8 formatter"
 	@echo "    make check          Run verify_setup and lint"
 	@echo ""
 	@echo "  Cleanup:"
@@ -66,7 +67,7 @@ help:
 $(UV):
 	@echo "Downloading uv locally into ./bin..."
 	@mkdir -p $(LOCAL_BIN)
-	curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="$(shell pwd)/bin" INSTALLER_NO_MODIFY_PATH=1 UV_NO_MODIFY_PATH=1 sh
+	curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="$(abspath $(LOCAL_BIN))" INSTALLER_NO_MODIFY_PATH=1 UV_NO_MODIFY_PATH=1 sh
 
 # Dependency Management
 pre:
@@ -103,11 +104,11 @@ bonus:
 	$(PYTHON) $(CLI_PY) --bonus
 
 # Development Tools
-lint:
+lint: sync
 	$(FLAKE8) $(SRC_DIR) $(SCRIPTS_DIR)
 
-format fmt:
-	$(PEP8) -i -r $(SRC_DIR) $(SCRIPTS_DIR)
+format fmt: sync
+	$(AUTOPEP8) -i -r $(SRC_DIR) $(SCRIPTS_DIR)
 
 check: sync lint
 	$(PYTHON) $(SCRIPTS_DIR)/verify_setup.py
@@ -116,9 +117,14 @@ check: sync lint
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
+	rm -f $(MODEL_FILE)
 
 fclean: clean
-	rm -rf .venv
-	rm -f $(MODEL_FILE)
+	@echo "Cleaning up..."
+	rm -rf $(VENV)
+	rm -rf $(LOCAL_BIN)
+	rm -rf $(UV_PY)
+	rm -rf $(UV_CACHE)
+	@echo "Clean complete."
 
 re: fclean all
