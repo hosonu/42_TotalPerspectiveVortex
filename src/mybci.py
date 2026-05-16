@@ -81,16 +81,18 @@ def do_predict(subject, runs, use_bonus=False):
 
     data_queue = queue.Queue()
     total_epochs = len(X)
+    stop_event = threading.Event()
 
     def eeg_producer():
         for i in range(total_epochs):
+            if stop_event.is_set():
+                break
             data_queue.put({
                 'epoch_nb': i,
                 'X_chunk': X[i:i+1],
                 'y_truth': y[i]
             })
             time.sleep(0.5)
-        
         data_queue.put(None)
 
     producer_thread = threading.Thread(target=eeg_producer)
@@ -98,6 +100,7 @@ def do_predict(subject, runs, use_bonus=False):
     producer_thread.start()
 
     correct_predictions = 0
+    processed = 0
     print("epoch nb: [prediction] [truth] equal?")
     try:
         while True:
@@ -109,26 +112,26 @@ def do_predict(subject, runs, use_bonus=False):
             X_chunk = item['X_chunk']
             y_truth = item['y_truth']
 
-            # Run prediction
             prediction = pipeline.predict(X_chunk)[0]
 
-            # Compare and print (PDF-style format)
             is_equal = (prediction == y_truth)
             if is_equal:
                 correct_predictions += 1
+            processed += 1
 
             pred_out = prediction + 1
             truth_out = y_truth + 1
             print(f"epoch {epoch_nb:02d}: [{pred_out}] [{truth_out}] {is_equal}")
-    
+
     except KeyboardInterrupt:
+        stop_event.set()
         print("\n[Predict] Stopped by user.")
     finally:
-        if total_epochs > 0:
-            accuracy = correct_predictions / total_epochs
+        if processed > 0:
+            accuracy = correct_predictions / processed
             print(f"Accuracy: {accuracy:.4f}")
-        
-    producer_thread.join()
+
+    producer_thread.join(timeout=2.0)
 
 
 def do_evaluate_all(use_bonus=False):
