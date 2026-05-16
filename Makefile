@@ -15,12 +15,15 @@ AUTOPEP8        := $(UV) run autopep8
 # Virtual environment
 export UV_PYTHON_INSTALL_DIR := $(UV_PY)
 export UV_CACHE_DIR := $(UV_CACHE)
-export UV_PYTHON_INSTALL := auto
+export UV_PYTHON_DOWNLOADS := auto
 
 # Directories
 SRC_DIR     := src
 SCRIPTS_DIR := scripts
 MODEL_FILE  := saved_bci_model.pkl
+
+EXTERNAL_MNE_DATA := /run/media/$(USER)/F0E9-334E/mne_data
+LINK_MNE_DATA     := ./mne_data
 
 # Entry Point
 CLI_PY      := $(SRC_DIR)/mybci.py
@@ -74,6 +77,15 @@ pre:
 	@echo "Creating directories in this project directory..."
 	@mkdir -p $(UV_PY)
 	@mkdir -p $(UV_CACHE)
+	@if [ ! -L "$(LINK_MNE_DATA)" ] && [ ! -d "$(LINK_MNE_DATA)" ]; then \
+		if [ -d "$(EXTERNAL_MNE_DATA)" ]; then \
+			echo "Creating symbolic link to external MNE data..."; \
+			ln -s "$(EXTERNAL_MNE_DATA)" "$(LINK_MNE_DATA)"; \
+		else \
+			echo "WARNING: External MNE data directory not found at $(EXTERNAL_MNE_DATA)"; \
+			echo "Please ensure your external storage is mounted."; \
+		fi \
+	fi
 
 sync: pre $(UV)
 	@echo "Syncing environment with uv.lock..."
@@ -125,6 +137,7 @@ fclean: clean
 	rm -rf $(LOCAL_BIN)
 	rm -rf $(UV_PY)
 	rm -rf $(UV_CACHE)
+	rm -f $(LINK_MNE_DATA)
 	@echo "Clean complete."
 
 re: fclean all
