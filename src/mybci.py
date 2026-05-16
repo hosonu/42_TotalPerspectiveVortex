@@ -85,7 +85,7 @@ def do_predict(subject, runs, use_bonus=False):
     def eeg_producer():
         for i in range(total_epochs):
             data_queue.put({
-                'epoch_nb': i + 1,
+                'epoch_nb': i,
                 'X_chunk': X[i:i+1],
                 'y_truth': y[i]
             })
@@ -220,9 +220,9 @@ def main():
     # e.g. python mybci.py 4 14 train -> runs=[4, 14], mode='train'
 
     if args.mode == "train":
-        do_train(args.subject, args.runs)
+        do_train(args.subject, args.runs, use_bonus=args.bonus)
     elif args.mode == "predict":
-        do_predict(args.subject, args.runs)
+        do_predict(args.subject, args.runs, use_bonus=args.bonus)
 
 
 if __name__ == "__main__":
