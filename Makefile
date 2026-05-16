@@ -20,7 +20,7 @@ export UV_PYTHON_DOWNLOADS := auto
 # Directories
 SRC_DIR     := src
 SCRIPTS_DIR := scripts
-MODEL_FILE  := saved_bci_model.pkl
+MODEL_FILE  := saved_bci_model.pkl bonus_bci_model.pkl
 
 EXTERNAL_MNE_DATA := /run/media/$(USER)/F0E9-334E/mne_data
 LINK_MNE_DATA     := ./mne_data
