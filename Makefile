@@ -137,7 +137,10 @@ fclean: clean
 	rm -rf $(LOCAL_BIN)
 	rm -rf $(UV_PY)
 	rm -rf $(UV_CACHE)
-	rm -f $(LINK_MNE_DATA)
+	@if [ -L "$(LINK_MNE_DATA)" ]; then \
+		echo "Removing symbolic link to MNE data..."; \
+		rm -f "$(LINK_MNE_DATA)"; \
+	fi
 	@echo "Clean complete."
 
 re: fclean all
