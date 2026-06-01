@@ -69,7 +69,7 @@ class CustomCSP(BaseEstimator, TransformerMixin):
                 if trace > 1e-12:
                     C = C / trace
                 else:
-                    C = np.eye(C.shape[0] / C.shape[0])
+                    C = np.eye(C.shape[0])
 
                 trial_covs.append(C)
 

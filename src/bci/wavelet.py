@@ -5,7 +5,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 class WaveletTransformer(BaseEstimator, TransformerMixin):
     """
-    Transformer that extracts time–frequency features using the Morlet wavelet
+    Transformer that extracts time-frequency features using the Morlet wavelet
     transform (bonus assignment). Takes CSP-filtered signals of shape
     (n_trials, n_components, n_times).
     """
