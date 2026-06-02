@@ -4,12 +4,16 @@ import struct
 import time
 import argparse
 
-from mybci import build_epochs, epochs_to_Xy
+from bci.epochs import build_epochs
+from bci.data import epochs_to_Xy
 
-def start_server(host, port, subject, runs):
-    print(f"Loading EEG data for Subject {subject}, Runs {runs}...")
 
-    epochs = build_epochs(subject, runs=runs)
+def start_server(host, port, subject, runs, dataset_cfg=None):
+    if dataset_cfg is None:
+        dataset_cfg = {}
+    print(f"Loading EEG data for Subject {subject} [{dataset_cfg.get('dataset', 'eegbci')}]...")
+
+    epochs = build_epochs(subject, runs=runs, **dataset_cfg)
     X, y = epochs_to_Xy(epochs)
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -54,10 +58,23 @@ def start_server(host, port, subject, runs):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="EEG Hardware Streaming Mock")
-    parser.add_argument("runs", metavar="N", type=int, nargs="+", help="Run numbers (e.g., 4 14)")
+    parser.add_argument("runs", metavar="N", type=int, nargs="*",
+                        help="Run numbers for eegbci (e.g., 4 14). Omit for bcic4_2a.")
     parser.add_argument("--subject", type=int, default=1)
     parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--port", type=int, default=5000)
+    parser.add_argument("--dataset", default="eegbci", choices=["eegbci", "bcic4_2a"])
+    parser.add_argument("--data-path", default=None, metavar="DIR",
+                        help="Directory with .gdf files (required for bcic4_2a)")
+    parser.add_argument("--classes", nargs=2, default=None, metavar="CLASS",
+                        help="Two class names for bcic4_2a")
     args = parser.parse_args()
-    
-    start_server(args.host, args.port, args.subject, args.runs)
+
+    dataset_cfg: dict = {"dataset": args.dataset}
+    if args.data_path is not None:
+        dataset_cfg["data_path"] = args.data_path
+    if args.classes is not None:
+        dataset_cfg["classes"] = args.classes
+
+    start_server(args.host, args.port, args.subject, args.runs or None,
+                 dataset_cfg=dataset_cfg)
