@@ -65,7 +65,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=5000)
     parser.add_argument("--dataset", default="eegbci", choices=["eegbci", "bcic4_2a"])
     parser.add_argument("--data-path", default=None, metavar="DIR",
-                        help="Directory with .gdf files (required for bcic4_2a)")
+                        help="Override bcic4_2a GDF directory (default: mne_data/BCICIV_2a_gdf)")
     parser.add_argument("--classes", nargs=2, default=None, metavar="CLASS",
                         help="Two class names for bcic4_2a")
     args = parser.parse_args()

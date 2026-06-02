@@ -12,10 +12,10 @@ https://www.bbci.de/competition/iv/#dataset2a
 
 Usage
 -----
-Place all .gdf files in a single directory and pass it via ``--data-path``.
+Place all .gdf files in ``mne_data/BCICIV_2a_gdf/`` (default).
+Override with ``--data-path`` if needed.
 
-    python mybci.py 0 train --subject 1 \\
-        --dataset bcic4_2a --data-path /path/to/gdf_files
+    python mybci.py 0 train --subject 1 --dataset bcic4_2a
 
 Classes (``--classes``)
 -----------------------
@@ -29,6 +29,10 @@ from pathlib import Path
 
 import mne
 import numpy as np
+
+# src/bci/datasets/bcic4_2a.py → repo root is four levels up
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+DEFAULT_DATA_PATH = _PROJECT_ROOT / "mne_data" / "BCICIV_2a_gdf"
 
 TMIN = 0.0
 TMAX = 4.0
@@ -50,6 +54,12 @@ DEFAULT_CLASSES = ["left_hand", "right_hand"]
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+def _resolve_data_path(data_path: str | Path | None) -> Path:
+    if data_path is None:
+        return DEFAULT_DATA_PATH
+    return Path(data_path)
+
 
 def _gdf_path(data_path: Path, subject: int, phase: str) -> Path:
     fname = data_path / f"A0{subject}{phase}.gdf"
@@ -89,14 +99,14 @@ def _annotation_event_id(raw: mne.io.Raw, wanted_codes: set[int]) -> dict[str, i
 def fetch_raw(
     subject: int,
     *,
-    data_path: str | Path,
+    data_path: str | Path | None = None,
     phase: str = "T",
 ) -> mne.io.Raw:
     """Read and preprocess continuous Raw (no epoching).
 
     Applies average reference and bandpass filter in place.
     """
-    fname = _gdf_path(Path(data_path), subject, phase)
+    fname = _gdf_path(_resolve_data_path(data_path), subject, phase)
     raw = mne.io.read_raw_gdf(str(fname), preload=True, verbose="WARNING")
 
     raw.pick("eeg")
@@ -113,7 +123,7 @@ def fetch_raw(
 def build_epochs(
     subject: int,
     *,
-    data_path: str | Path,
+    data_path: str | Path | None = None,
     classes: list[str] | None = None,
     phase: str = "T",
 ) -> mne.Epochs:
@@ -125,6 +135,7 @@ def build_epochs(
         Subject index 1-9.
     data_path :
         Directory containing the ``.gdf`` files.
+        Defaults to ``mne_data/BCICIV_2a_gdf`` under the project root.
     classes :
         Exactly 2 class names from ``["left_hand", "right_hand", "feet",
         "tongue"]``.  Defaults to ``["left_hand", "right_hand"]``.

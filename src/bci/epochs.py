@@ -38,17 +38,12 @@ def build_epochs(
         ``"eegbci"`` (default) or ``"bcic4_2a"``.
     data_path :
         Local directory that contains the dataset files.
-        Required for ``bcic4_2a``; ignored for ``eegbci``.
+        For ``bcic4_2a``, defaults to ``mne_data/BCICIV_2a_gdf``; ignored for ``eegbci``.
     classes :
         Two class names for ``bcic4_2a``
         (e.g. ``["left_hand", "right_hand"]``).  Ignored for ``eegbci``.
     """
     if dataset == "bcic4_2a":
-        if data_path is None:
-            raise ValueError(
-                "--data-path is required for dataset 'bcic4_2a'. "
-                "Point it to the directory containing the .gdf files."
-            )
         from bci.datasets.bcic4_2a import build_epochs as _build_2a
         return _build_2a(subject, data_path=data_path, classes=classes)
 

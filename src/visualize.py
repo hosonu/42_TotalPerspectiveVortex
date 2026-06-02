@@ -5,8 +5,6 @@ from bci.eegbci import fetch_raw_eegbci, bandpass_filter_raw, L_FREQ, H_FREQ
 
 def _load_raw(subject, runs, dataset, data_path):
     if dataset == "bcic4_2a":
-        if data_path is None:
-            raise ValueError("--data-path is required for dataset 'bcic4_2a'")
         from bci.datasets.bcic4_2a import fetch_raw
         return fetch_raw(subject, data_path=data_path)
     return fetch_raw_eegbci(subject, runs)
@@ -51,7 +49,7 @@ if __name__ == "__main__":
                         help="Run numbers for eegbci (e.g., 4 8 12). Omit for bcic4_2a.")
     parser.add_argument("--dataset", default="eegbci", choices=["eegbci", "bcic4_2a"])
     parser.add_argument("--data-path", default=None, metavar="DIR",
-                        help="Directory with .gdf files (required for bcic4_2a)")
+                        help="Override bcic4_2a GDF directory (default: mne_data/BCICIV_2a_gdf)")
     args = parser.parse_args()
 
     visualize_eeg(args.subject, args.runs or None,

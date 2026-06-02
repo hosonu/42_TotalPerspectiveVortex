@@ -227,7 +227,7 @@ def main():
                         choices=["eegbci", "bcic4_2a"],
                         help="Dataset to use (default: eegbci)")
     parser.add_argument("--data-path", default=None, metavar="DIR",
-                        help="Path to dataset files (required for bcic4_2a)")
+                        help="Override bcic4_2a GDF directory (default: mne_data/BCICIV_2a_gdf)")
     parser.add_argument("--classes", nargs=2, default=None, metavar="CLASS",
                         help="Two class names for bcic4_2a "
                              "(e.g. --classes left_hand right_hand)")
