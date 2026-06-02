@@ -20,7 +20,8 @@ export UV_PYTHON_DOWNLOADS := auto
 # Directories
 SRC_DIR     := src
 SCRIPTS_DIR := scripts
-MODEL_FILE  := saved_bci_model.pkl bonus_bci_model.pkl
+MODEL_FILE  := saved_bci_model.pkl bonus_bci_model.pkl \
+               bcic4_2a_saved_bci_model.pkl bcic4_2a_bonus_bci_model.pkl
 
 EXTERNAL_MNE_DATA := /run/media/$(USER)/F0E9-334E/mne_data
 LINK_MNE_DATA     := ./mne_data
@@ -31,8 +32,32 @@ VIS_PY		:= $(SRC_DIR)/visualize.py
 
 # Parameters (can be overridden: make train RUNS="3 7 11" SUBJECT=5)
 SUBJECT     ?= 1
-RUNS        ?= 4 8 12
 BONUS		?= 0
+
+# Dataset selection (default: eegbci)
+# bcic4_2a example:
+#   make train DATASET=bcic4_2a SUBJECT=1
+#   make train DATASET=bcic4_2a CLASSES="left_hand right_hand"
+DATASET     ?= eegbci
+CLASSES     ?=
+
+ifeq ($(DATASET),bcic4_2a)
+    ifeq ($(origin RUNS),undefined)
+        RUNS := 0
+    endif
+    DATASET_FLAGS := --dataset bcic4_2a
+    VIS_RUNS      :=
+else
+    RUNS          ?= 4 8 12
+    DATASET_FLAGS :=
+    VIS_RUNS      := $(RUNS)
+endif
+
+ifneq ($(strip $(CLASSES)),)
+    CLASSES_FLAG := --classes $(CLASSES)
+else
+    CLASSES_FLAG :=
+endif
 
 ifeq ($(BONUS),1)
     BONUS_FLAG := --bonus
@@ -53,9 +78,15 @@ help:
 	@echo ""
 	@echo "  Execution:"
 	@echo "    make run            Full evaluation for all subjects (no arguments)"
-	@echo "    make train          Train model with RUNS='$(RUNS)'"
-	@echo "    make predict        Playback simulation with RUNS='$(RUNS)'"
-	@echo "    make visualize      Visualize raw/filtered EEG data with RUNS='$(RUNS)'"
+	@echo "    make train          Train model (DATASET=$(DATASET), RUNS='$(RUNS)')"
+	@echo "    make predict        Playback simulation (DATASET=$(DATASET), RUNS='$(RUNS)')"
+	@echo "    make visualize      Visualize raw/filtered EEG (DATASET=$(DATASET))"
+	@echo ""
+	@echo "  Dataset overrides (bcic4_2a):"
+	@echo "    DATASET=bcic4_2a     Use BCI Competition IV 2a (default: eegbci)"
+	@echo "    CLASSES=\"A B\"       Two class names (e.g. left_hand right_hand)"
+	@echo "    GDF files expected at: mne_data/BCICIV_2a_gdf/"
+	@echo "    Example: make train DATASET=bcic4_2a SUBJECT=1"
 	@echo ""
 	@echo "  Development:"
 	@echo "    make lint           Run flake8 on src and scripts"
@@ -100,16 +131,16 @@ run main: sync
 	$(PYTHON) $(CLI_PY) $(BONUS_FLAG)
 
 train: sync
-	@echo "==> Training model..."
-	$(PYTHON) $(CLI_PY) $(RUNS) train --subject $(SUBJECT) $(BONUS_FLAG)
+	@echo "==> Training model (dataset=$(DATASET), subject=$(SUBJECT))..."
+	$(PYTHON) $(CLI_PY) $(RUNS) train --subject $(SUBJECT) $(DATASET_FLAGS) $(CLASSES_FLAG) $(BONUS_FLAG)
 
 predict: sync
-	@echo "==> Running playback simulation..."
-	$(PYTHON) $(CLI_PY) $(RUNS) predict --subject $(SUBJECT) $(BONUS_FLAG)
+	@echo "==> Running playback simulation (dataset=$(DATASET), subject=$(SUBJECT))..."
+	$(PYTHON) $(CLI_PY) $(RUNS) predict --subject $(SUBJECT) $(DATASET_FLAGS) $(CLASSES_FLAG) $(BONUS_FLAG)
 
 visualize: sync
-	@echo "==> Visualizing raw and filtered EEG data..."
-	$(PYTHON) $(VIS_PY) $(RUNS) --subject $(SUBJECT)
+	@echo "==> Visualizing raw and filtered EEG data (dataset=$(DATASET), subject=$(SUBJECT))..."
+	$(PYTHON) $(VIS_PY) $(VIS_RUNS) --subject $(SUBJECT) $(DATASET_FLAGS)
 
 bonus:
 	@echo "==> Evaluating bonus pipeline on all subjects..."
