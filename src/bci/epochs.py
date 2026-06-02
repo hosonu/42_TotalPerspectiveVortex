@@ -1,4 +1,8 @@
-"""Build MNE :class:`Epochs` from PhysioNet EEGBCI (motor-imagery style T1/T2)."""
+"""Build MNE :class:`Epochs` from a supported EEG dataset.
+
+Default dataset is PhysioNet EEGBCI (motor-imagery T1/T2).
+Pass ``dataset="bcic4_2a"`` to use BCI Competition IV Dataset 2a instead.
+"""
 
 from __future__ import annotations
 
@@ -17,12 +21,44 @@ BASELINE = (0.0, 0.5)
 def build_epochs(
     subject: int,
     runs: list[int] | None = None,
+    *,
+    dataset: str = "eegbci",
+    data_path: str | None = None,
+    classes: list[str] | None = None,
 ) -> mne.Epochs:
-    """Fetch ``runs`` (default: imagery runs 4, 8, 12), filter, and epoch to T1 vs T2.
+    """Return bandpass-filtered, epoched EEG data for the requested dataset.
 
-    If your experiment uses different run lists, pass ``runs``; event codes stay T1/T2
-    (assignment-specific mappings may need adjustment).
+    Parameters
+    ----------
+    subject :
+        Subject ID.  For EEGBCI: 1-109.  For bcic4_2a: 1-9.
+    runs :
+        Run numbers (EEGBCI only).  Ignored for other datasets.
+    dataset :
+        ``"eegbci"`` (default) or ``"bcic4_2a"``.
+    data_path :
+        Local directory that contains the dataset files.
+        Required for ``bcic4_2a``; ignored for ``eegbci``.
+    classes :
+        Two class names for ``bcic4_2a``
+        (e.g. ``["left_hand", "right_hand"]``).  Ignored for ``eegbci``.
     """
+    if dataset == "bcic4_2a":
+        if data_path is None:
+            raise ValueError(
+                "--data-path is required for dataset 'bcic4_2a'. "
+                "Point it to the directory containing the .gdf files."
+            )
+        from bci.datasets.bcic4_2a import build_epochs as _build_2a
+        return _build_2a(subject, data_path=data_path, classes=classes)
+
+    if dataset != "eegbci":
+        from bci.datasets import AVAILABLE
+        raise ValueError(
+            f"Unknown dataset '{dataset}'. Available: {AVAILABLE}"
+        )
+
+    # --- EEGBCI (default) ---
     if runs is None:
         runs = list(IMAGERY_RUNS)
     raw = fetch_raw_eegbci(subject, runs)
