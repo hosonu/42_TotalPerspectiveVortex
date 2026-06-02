@@ -34,14 +34,19 @@ def suppress_stdout_stderr():
             sys.stdout = old_stdout
             sys.stderr = old_stderr
 
-def get_model_file(use_bonus):
-    return "bonus_bci_model.pkl" if use_bonus else "saved_bci_model.pkl"
+def get_model_file(use_bonus, dataset="eegbci"):
+    name = "bonus_bci_model" if use_bonus else "saved_bci_model"
+    if dataset != "eegbci":
+        name = f"{dataset}_{name}"
+    return f"{name}.pkl"
 
-def do_train(subject, runs, use_bonus=False):
+def do_train(subject, runs, use_bonus=False, dataset_cfg=None):
     """
     Train the pipeline on the given runs, print cross-validation scores, then save the model.
     """
-    epochs = build_epochs(subject, runs=runs)
+    if dataset_cfg is None:
+        dataset_cfg = {}
+    epochs = build_epochs(subject, runs=runs, **dataset_cfg)
     X, y = epochs_to_Xy(epochs)
 
     # Build pipeline
@@ -59,15 +64,17 @@ def do_train(subject, runs, use_bonus=False):
     # Fit on all data and persist the model
     pipeline.fit(X, y)
 
-    model_file = get_model_file(use_bonus)
+    model_file = get_model_file(use_bonus, dataset_cfg.get("dataset", "eegbci"))
 
     joblib.dump(pipeline, model_file)
 
-def do_predict(subject, runs, use_bonus=False):
+def do_predict(subject, runs, use_bonus=False, dataset_cfg=None):
     """
     Load the saved model and simulate a data stream, predicting one epoch at a time.
     """
-    model_file = get_model_file(use_bonus)
+    if dataset_cfg is None:
+        dataset_cfg = {}
+    model_file = get_model_file(use_bonus, dataset_cfg.get("dataset", "eegbci"))
     model_path = Path(model_file)
     if not model_path.exists():
         print(
@@ -76,8 +83,8 @@ def do_predict(subject, runs, use_bonus=False):
 
     pipeline = joblib.load(model_file)
 
-    epochs = build_epochs(subject, runs=runs)
-    X,y = epochs_to_Xy(epochs)
+    epochs = build_epochs(subject, runs=runs, **dataset_cfg)
+    X, y = epochs_to_Xy(epochs)
 
     data_queue = queue.Queue()
     total_epochs = len(X)
@@ -209,23 +216,38 @@ def main():
         description="Brain Computer Interface CLI")
 
     parser.add_argument("runs", metavar="N", type=int,
-                        nargs="+", help="Run numbers (e.g., 4 14)")
+                        nargs="+", help="Run numbers (e.g., 4 14). Ignored for bcic4_2a.")
     parser.add_argument(
         "mode", choices=["train", "predict"], help="Mode to run: 'train' or 'predict'")
     parser.add_argument("--subject", type=int, default=1,
                         help="Subject ID (default: 1)")
     parser.add_argument("--bonus", action="store_true",
                         help="Use the custom classifier (Bonus part)")
+    parser.add_argument("--dataset", default="eegbci",
+                        choices=["eegbci", "bcic4_2a"],
+                        help="Dataset to use (default: eegbci)")
+    parser.add_argument("--data-path", default=None, metavar="DIR",
+                        help="Path to dataset files (required for bcic4_2a)")
+    parser.add_argument("--classes", nargs=2, default=None, metavar="CLASS",
+                        help="Two class names for bcic4_2a "
+                             "(e.g. --classes left_hand right_hand)")
 
     args = parser.parse_args()
+
+    # Build dataset config dict; only include non-None extras to keep EEGBCI calls clean
+    dataset_cfg: dict = {"dataset": args.dataset}
+    if args.data_path is not None:
+        dataset_cfg["data_path"] = args.data_path
+    if args.classes is not None:
+        dataset_cfg["classes"] = args.classes
 
     # With this parser layout, mode is the last positional so runs are not parsed as mode.
     # e.g. python mybci.py 4 14 train -> runs=[4, 14], mode='train'
 
     if args.mode == "train":
-        do_train(args.subject, args.runs, use_bonus=args.bonus)
+        do_train(args.subject, args.runs, use_bonus=args.bonus, dataset_cfg=dataset_cfg)
     elif args.mode == "predict":
-        do_predict(args.subject, args.runs, use_bonus=args.bonus)
+        do_predict(args.subject, args.runs, use_bonus=args.bonus, dataset_cfg=dataset_cfg)
 
 
 if __name__ == "__main__":
