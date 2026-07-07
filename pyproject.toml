@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "42-totalperspectivevortex"
 version = "0.1.0"
-description = "Add your description here"
+description = "Motor-imagery EEG classification with custom CSP and scikit-learn"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
